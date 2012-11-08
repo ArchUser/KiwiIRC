@@ -24,7 +24,50 @@ _kiwi.global = {
 	command: undefined,  // The control box
 
 	// TODO: think of a better term for this as it will also refer to queries
-	channels: undefined, // TODO: Limited access to panels list
+	channels: (function () {
+		var channels = function (name, fn) {
+			var chans = [];
+
+			// If only a callback function has been set, set a blank name
+			if (typeof name === 'function') {
+				fn = name;
+				name = null;
+			}
+
+			// Get 1 channel only
+			if (typeof name === 'string') {
+				chans.push(_kiwi.app.panels.getByName(name));
+
+			} else if (typeof name === 'object' && name) {
+				// Find each of the specified channels
+				_.each(name, function (name) {
+					var tmp = _kiwi.app.panels.getByName(name);
+					if (tmp && tmp.isChannel()) chans.push(tmp);
+				});
+			} else {
+				// Otherwise.. just get them all
+				_.each(_kiwi.app.panels.models, function (panel) {
+					if (panel && panel.isChannel()) chans.push(panel);
+				});
+			}
+
+			// If a callback function has been set, call it with each channel
+			if (typeof fn === 'function') {
+				_.each(chans, fn);
+			}
+
+			return chans;
+		};
+
+
+		channels.join = function (chans) { _kiwi.gateway.join(chans); };
+		channels.part = function (chans) { _kiwi.gateway.part(chans); };
+
+		// TODO: Add knock support to gateway
+		//channels.knock = function (chan) { kiwi.gateway.knock(chan); };
+
+		return channels;
+	})(),
 
 	// Entry point to start the kiwi application
 	start: function (opts) {
